@@ -1,0 +1,12 @@
+---
+platform: linux
+image: docker:///java#8
+inputs:
+  - name: source-code
+    path: .
+  - name: version
+run:
+  path: ./gradlew
+  args: ["build"]
+params:
+  TERM: dumb

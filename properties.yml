@@ -1,0 +1,11 @@
+ci-repo-git: git@github.com:riddopic/SpringBootTrader-ci.git
+ci-repo: https://github.com/riddopic/SpringBootTrader-ci.git
+code-repo: https://github.com/riddopic/cf-SpringBootTrader.git
+code-branch: development
+app-version-file: trader-version
+version-branch: version
+cf-api: https://cbl.bluebeluga.io
+cf-username: dpinto
+cf-organisation: dpinto-org
+cf-space: trader
+cf-skip-ssl: true

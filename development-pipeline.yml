@@ -1,0 +1,159 @@
+---
+jobs:
+- name: Build
+  public: true
+  serial: true
+  serial_groups: ["build"]
+  plan:
+  - aggregate:
+    - get: source-code
+      trigger: true
+#    - get: ci
+#      trigger: false
+    - get: version
+      trigger: false
+      params: {pre: rc}
+  - task: build-task
+#    file: ci/task_build.yml
+    config:
+      platform: linux
+      image: docker:///java#8
+      inputs:
+        - name: source-code
+          path: .
+        - name: version
+      run:
+        path: ./gradlew
+        args: ["build"]
+      params:
+        TERM: dumb
+  - aggregate:
+#    - put: version
+#      params: {file: version/number}
+#    - put: quotes-jar-store
+#      params: {from: ./springboottrades-quotes/build/libs/quotes-.*.jar$}
+#    - put: accounts-jar-store
+#      params: {from: ./springboottrades-accounts/build/libs/accounts-.*.jar$}
+    - put: deploy-quotes
+      resource: deploy-to-cf
+      params:
+        manifest: build-task/springboottrades-quotes/build/manifest.yml
+        environment_variables:
+          CF_TARGET: {{cf-api}}
+    - put: deploy-accounts
+      resource: deploy-to-cf
+      params:
+        manifest: build-task/springboottrades-accounts/build/manifest.yml
+        environment_variables:
+          CF_TARGET: {{cf-api}}
+    - put: deploy-portfolio
+      resource: deploy-to-cf
+      params:
+        manifest: build-task/springboottrades-portfolio/build/manifest.yml
+        environment_variables:
+          CF_TARGET: {{cf-api}}
+    - put: deploy-web
+      resource: deploy-to-cf
+      params:
+        manifest: build-task/springboottrades-web/build/manifest.yml
+        environment_variables:
+          CF_TARGET: {{cf-api}}
+#- name: Deploy
+#  public: true
+#  serial: true
+#  serial_groups: ["build"]
+#  plan:
+#  - aggregate:
+#    - get: quotes-jar-store
+#      trigger: true
+#      passed: [Build]
+#    - get: accounts-jar-store
+#      trigger: true
+#      passed: [Build]
+#    - get: version
+#      trigger: true
+#      passed: [Build]
+#    - get: source-code
+#      trigger: true
+#      passed: [Build]
+#  - task: create-manifests
+#    config:
+#      platform: linux
+#      image: docker:///java#8
+#      inputs:
+#        - name: source-code
+#          path: .
+#        - name: version
+#      outputs:
+#        - name: manifest
+#          path: create-manifests/springboottrades-quotes/build/
+#      run:
+#        path: ./gradlew
+#        args: ["manifestFilter"]
+#      params:
+#        TERM: dumb
+#        JAR_PATH: ""
+#  - task: cat-manifests
+#    config:
+#      platform: linux
+#      image: docker:///java#8
+#      inputs:
+#        - name: manifest
+#          path: .
+#      run:
+#        path: cat
+#        args: ["manifest.yml"]
+#  - aggregate:
+#    - put: deploy-to-cf
+#      params:
+#        manifest: create-manifests/springboottrades-quotes/build/manifest.yml
+#        environment_variables:
+#          CF_TARGET: {{cf-api}}
+
+resources:
+- name: source-code
+  type: git
+  source:
+    uri: {{code-repo}}
+    branch: {{code-branch}}
+
+- name: ci
+  type: git
+  source:
+    uri:  {{ci-repo}}
+    branch: master
+
+- name: version
+  type: semver
+  source:
+    driver: git
+    uri: {{ci-repo-git}}
+    branch: {{version-branch}}
+    file: {{app-version-file}}
+    private_key: {{springboottrader-ci-repo-private-key}}
+
+- name: deploy-to-cf
+  type: cf
+  source:
+     api: {{cf-api}}
+     username: {{cf-username}}
+     password: {{cf-password}}
+     organization: {{cf-organisation}}
+     space: {{cf-space}}
+#     skip_cert_check: {{cf-skip-ssl}}
+     skip_cert_check: true
+
+- name: quotes-jar-store
+  type: s3
+  source:
+    bucket: artefacts.sbt
+    regexp: quotes-.*.jar
+    access_key_id: {{AWS-key-id}}
+    secret_access_key: {{AWS-secret}}
+- name: accounts-jar-store
+  type: s3
+  source:
+    bucket: artefacts.sbt
+    regexp: accounts-.*.jar
+    access_key_id: {{AWS-key-id}}
+    secret_access_key: {{AWS-secret}}
