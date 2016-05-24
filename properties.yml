@@ -4,7 +4,7 @@ code-repo: https://github.com/riddopic/cf-SpringBootTrader.git
 code-branch: development
 app-version-file: trader-version
 version-branch: version
-cf-api: https://cbl.bluebeluga.io
+cf-api: http://cbl.bluebeluga.io
 cf-username: dpinto
 cf-organisation: dpinto-org
 cf-space: trader
